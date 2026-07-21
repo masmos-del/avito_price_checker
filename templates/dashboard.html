@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Дашборд - Avito Price Checker{% endblock %}
+
+{% block content %}
+<h2>📊 Статистика и обзор</h2>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>📦 Всего товаров</h3>
+        <div class="value">{{ stats.total_products }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>💰 Выгодных предложений</h3>
+        <div class="value">{{ stats.profitable_products }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>📤 Отправлено в Telegram</h3>
+        <div class="value">{{ stats.sent_products }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>📈 Средняя скидка</h3>
+        <div class="value">{{ stats.avg_discount }}%</div>
+    </div>
+    <div class="stat-card">
+        <h3>🔥 Максимальная скидка</h3>
+        <div class="value">{{ stats.max_discount }}%</div>
+    </div>
+</div>
+
+<h3>🔥 Топ 10 скидок</h3>
+<table class="product-table">
+    <thead>
+        <tr>
+            <th>📦 Товар</th>
+            <th>💵 Цена</th>
+            <th>💲 Рынок</th>
+            <th>🎉 Скидка</th>
+            <th>🔗 Ссылка</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in best %}
+        <tr>
+            <td class="product-title">{{ product.title[:50] }}...</td>
+            <td class="price">{{ product.price }}₽</td>
+            <td>{{ product.market_price }}₽</td>
+            <td class="discount high">{{ product.discount_percent }}%</td>
+            <td><a href="{{ product.url }}" target="_blank" class="link-button">Открыть</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3 style="margin-top: 30px;">📦 Последние 10 товаров</h3>
+<table class="product-table">
+    <thead>
+        <tr>
+            <th>📦 Товар</th>
+            <th>💵 Цена</th>
+            <th>📍 Локация</th>
+            <th>👤 Продавец</th>
+            <th>🔗 Ссылка</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in recent %}
+        <tr>
+            <td class="product-title">{{ product.title[:40] }}...</td>
+            <td class="price">{{ product.price }}₽</td>
+            <td>{{ product.location }}</td>
+            <td>{{ product.seller_name[:30] }}</td>
+            <td><a href="{{ product.url }}" target="_blank" class="link-button">Открыть</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+
+<h3>💾 Быстрый экспорт</h3>
+<p style="margin-bottom: 15px; color: #666;">Скачать все найденные товары:</p>
+<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <a href="/api/export/csv" class="btn" style="text-decoration: none; display: inline-block;">📄 Скачать CSV</a>
+    <a href="/api/export/excel" class="btn" style="text-decoration: none; display: inline-block;">📊 Скачать Excel</a>
+    <a href="/api/export/json" class="btn" style="text-decoration: none; display: inline-block;">📋 Скачать JSON</a>
+</div>
+{% endblock %}

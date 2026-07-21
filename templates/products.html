@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Товары - Avito Price Checker{% endblock %}
+
+{% block content %}
+<h2>📦 Все товары</h2>
+
+<!-- 💾 КНОПКИ ЭКСПОРТА -->
+<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+    <p style="margin-bottom: 10px; font-weight: bold;">💾 Экспортировать данные:</p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="/api/export/csv" class="btn" style="text-decoration: none; display: inline-block;">📄 CSV</a>
+        <a href="/api/export/excel" class="btn" style="text-decoration: none; display: inline-block;">📊 Excel</a>
+        <a href="/api/export/json" class="btn" style="text-decoration: none; display: inline-block;">📋 JSON</a>
+    </div>
+    <p style="margin-top: 10px; font-size: 12px; color: #666;">
+        ℹ️ Можешь добавить фильтры: 
+        <code>?profitable_only=true&min_discount=20&max_price=5000</code>
+    </p>
+</div>
+
+<!-- 🔍 ФИЛЬТРЫ -->
+<div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+    <p style="margin-bottom: 10px; font-weight: bold;">🔍 Фильтры:</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+        <label>
+            <input type="checkbox" id="filterProfitable"> 
+            💰 Только выгодные
+        </label>
+        <label>
+            Минимальная скидка: 
+            <input type="number" id="filterMinDiscount" min="0" max="100" value="0" style="width: 60px;">%
+        </label>
+        <label>
+            Максимальная цена: 
+            <input type="number" id="filterMaxPrice" min="0" style="width: 80px;">₽
+        </label>
+        <label>
+            Минимальный рейтинг: 
+            <input type="number" id="filterMinRating" min="0" max="5" step="0.1" style="width: 60px;">
+        </label>
+    </div>
+    <button class="btn btn-small" onclick="applyFilters()" style="margin-top: 10px;">🔄 Применить фильтры</button>
+</div>
+
+<!-- 🔎 ПОИСК -->
+<div style="margin-bottom: 20px;">
+    <input type="text" id="search" placeholder="🔍 Поиск по названию..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+</div>
+
+<!-- 📊 ТАБЛИЦА -->
+<table class="product-table" id="productsTable">
+    <thead>
+        <tr>
+            <th>📦 Товар</th>
+            <th>💵 Цена</th>
+            <th>💲 Рынок</th>
+            <th>🎉 Скидка</th>
+            <th>📍 Локация</th>
+            <th>👤 Продавец</th>
+            <th>📤 Статус</th>
+            <th>🔗 Ссылка</th>
+        </tr>
+    </thead>
+    <tbody id="productsBody">
+        <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
+                <div class="loading">Загрузка товаров</div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<script>
+    let allProducts = [];
+    
+    async function loadProducts() {
+        try {
+            const response = await fetch('/api/products');
+            allProducts = await response.json();
+            displayProducts(allProducts);
+        } catch (error) {
+            console.error('Ошибка:', error);
+        }
+    }
+    
+    function displayProducts(products) {
+        const tbody = document.getElementById('productsBody');
+        tbody.innerHTML = '';
+        
+        if (products.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px;">Товары не найдены</td></tr>';
+            return;
+        }
+        
+        products.forEach(product => {
+            const row = document.createElement('tr');
+            const discountClass = product.discount_percent > 30 ? 'discount high' : 'discount';
+            const status = product.is_sent ? '✅ Отправлен' : '⏳ Не отправлен';
+            
+            row.innerHTML = `
+                <td class="product-title">${product.title.substring(0, 50)}...</td>
+                <td class="price">${product.price}₽</td>
+                <td>${product.market_price}₽</td>
+                <td class="${discountClass}">${product.discount_percent}%</td>
+                <td>${product.location}</td>
+                <td>${product.seller_name.substring(0, 30)}</td>
+                <td>${status}</td>
+                <td><a href="${product.url}" target="_blank" class="link-button">Открыть</a></td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        // Фильтрация по поиску
+        const searchInput = document.getElementById('search');
+        searchInput.addEventListener('keyup', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('#productsTable tbody tr').forEach(row => {
+                const title = row.querySelector('.product-title').textContent.toLowerCase();
+                row.style.display = title.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+    
+    function applyFilters() {
+        let filtered = [...allProducts];
+        
+        // Фильтр: только выгодные
+        if (document.getElementById('filterProfitable').checked) {
+            filtered = filtered.filter(p => p.is_profitable);
+        }
+        
+        // Фильтр: минимальная скидка
+        const minDiscount = parseFloat(document.getElementById('filterMinDiscount').value) || 0;
+        filtered = filtered.filter(p => p.discount_percent >= minDiscount);
+        
+        // Фильтр: максимальная цена
+        const maxPrice = parseFloat(document.getElementById('filterMaxPrice').value);
+        if (maxPrice) {
+            filtered = filtered.filter(p => p.price <= maxPrice);
+        }
+        
+        // Фильтр: минимальный рейтинг
+        const minRating = parseFloat(document.getElementById('filterMinRating').value) || 0;
+        filtered = filtered.filter(p => p.seller_rating >= minRating);
+        
+        displayProducts(filtered);
+    }
+    
+    loadProducts();
+</script>
+{% endblock %}

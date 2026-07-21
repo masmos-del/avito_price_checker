@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки - Avito Price Checker{% endblock %}
+
+{% block content %}
+<h2>⚙️ Настройки</h2>
+
+<div id="message" style="display: none;"></div>
+
+<div class="settings-group">
+    <h3>💰 Минимальная скидка</h3>
+    <label>Значение в процентах (0-100)</label>
+    <input type="number" id="minDiscount" min="0" max="100" value="{{ settings.min_discount }}">
+    <button class="btn btn-small" onclick="saveMinDiscount()">💾 Сохранить</button>
+    <p style="margin-top: 10px; font-size: 12px; color: #666;">Найденные товары должны иметь скидку больше этого значения</p>
+</div>
+
+<div class="settings-group">
+    <h3>💵 Максимальная цена</h3>
+    <label>Значение в рублях</label>
+    <input type="number" id="maxPrice" min="100" value="{{ settings.max_price }}">
+    <button class="btn btn-small" onclick="saveMaxPrice()">💾 Сохранить</button>
+    <p style="margin-top: 10px; font-size: 12px; color: #666;">Поиск товаров не выше этой цены</p>
+</div>
+
+<div class="settings-group">
+    <h3>⭐ Минимальный рейтинг продавца</h3>
+    <label>Значение от 0 до 5</label>
+    <input type="number" id="minRating" min="0" max="5" step="0.1" value="{{ settings.min_rating }}">
+    <button class="btn btn-small" onclick="saveMinRating()">💾 Сохранить</button>
+    <p style="margin-top: 10px; font-size: 12px; color: #666;">Товары от продавцов с рейтингом ниже этого значения будут пропущены</p>
+</div>
+
+<div class="settings-group">
+    <h3>⏱️ Интервал сканирования</h3>
+    <label>Значение в часах</label>
+    <input type="number" id="scanInterval" min="1" value="{{ settings.scan_interval_hours }}">
+    <button class="btn btn-small" onclick="saveScanInterval()">💾 Сохранить</button>
+    <p style="margin-top: 10px; font-size: 12px; color: #666;">Как часто запускать автоматический поиск</p>
+</div>
+
+<div class="settings-group">
+    <h3>📦 Отслеживаемые товары</h3>
+    <div id="trackedProductsList" style="margin-bottom: 15px;">
+        <div class="loading">Загрузка...</div>
+    </div>
+    
+    <label>Добавить новый товар</label>
+    <div style="display: flex; gap: 10px;">
+        <input type="text" id="newProduct" placeholder="Например: iPhone 15, MacBook Air...">
+        <button class="btn btn-small" onclick="addProduct()">➕ Добавить</button>
+    </div>
+</div>
+
+<div class="settings-group">
+    <h3>🚫 Чёрный список продавцов</h3>
+    <div id="blacklistItems" style="margin-bottom: 15px;">
+        <div class="loading">Загрузка...</div>
+    </div>
+    
+    <label>Добавить продавца в чёрный список</label>
+    <div style="display: flex; gap: 10px;">
+        <input type="text" id="newSeller" placeholder="Название продавца...">
+        <button class="btn btn-small" onclick="addToBlacklist()">🚫 Добавить</button>
+    </div>
+</div>
+
+<script>
+    async function showMessage(text, type = 'success') {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = text;
+        messageDiv.className = `message ${type}`;
+        messageDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    }
+
+    async function saveMinDiscount() {
+        const discount = document.getElementById('minDiscount').value;
+        try {
+            const response = await fetch('/api/settings/min-discount', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ discount })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showMessage('✅ ' + data.message, 'success');
+            } else {
+                showMessage('❌ ' + data.message, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ Ошибка: ' + error, 'error');
+        }
+    }
+
+    async function saveMaxPrice() {
+        const price = document.getElementById('maxPrice').value;
+        try {
+            const response = await fetch('/api/settings/max-price', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ price })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showMessage('✅ ' + data.message, 'success');
+            } else {
+                showMessage('❌ ' + data.message, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ Ошибка: ' + error, 'error');
+        }
+    }
+
+    async function saveMinRating() {
+        const rating = document.getElementById('minRating').value;
+        try {
+            const response = await fetch('/api/settings/min-rating', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rating })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showMessage('✅ ' + data.message, 'success');
+            } else {
+                showMessage('❌ ' + data.message, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ Ошибка: ' + error, 'error');
+        }
+    }
+
+    async function saveScanInterval() {
+        const hours = document.getElementById('scanInterval').value;
+        try {
+            const response = await fetch('/api/settings/scan-interval', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hours })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showMessage('✅ ' + data.message, 'success');
+            } else {
+                showMessage('❌ ' + data.message, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ Ошибка: ' + error, 'error');
+        }
+    }
+
+    async function loadTrackedProducts() {
+        try {
+            const response = await fetch('/api/products/tracked');
+            const data = await response.json();
+            
+            const container = document.getElementById('trackedProductsList');
+            
+            if (data.products.length === 0) {
+                container.innerHTML = '<p style="color: #999;">Нет отслеживаемых товаров</p>';
+                return;
+            }
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">';
+            
+            data.products.forEach(product => {
+                html += `
+                    <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>${product}</span>
+                        <button class="btn btn-small" onclick="removeProduct('${product}')">❌</button>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Ошибка:', error);
+        }
+    }
+
+    async function addProduct() {
+        const product = document.getElementById('newProduct').value.trim();
+        
+        if (!product) {
+            showMessage('❌ Введи название товара', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/products/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showMessage('✅ ' + data.message, 'success');
+                document.getElementById('newProduct').value = '';
+                loadTrackedProducts();
+            } else {
+                showMessage('❌ ' + data.message, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ Ошибка: ' + error, 'error');
+        }
+    }
+
+    async function removeProduct(product) {
+        try {
+            const response = await fetch('/api/products/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                showMessage('✅ ' + data.message, 'success');
+                loadTrackedProducts();
+            } else {
+                showMessage('❌ ' + data.message, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ Ошибка: ' + error, 'error');
+        }
+    }
+
+    async function addToBlacklist() {
+        const seller = document.getElementById('newSeller').value.trim();
+        
+        if (!seller) {
+            showMessage('❌ Введи название продавца', 'error');
+            return;
+        }
+        
+        // В этом примере просто показываем сообщение
+        showMessage('✅ Функция будет добавлена в версии 3.1', 'success');
+    }
+
+    // Загружаем товары при загрузке страницы
+    loadTrackedProducts();
+</script>
+{% endblock %}
