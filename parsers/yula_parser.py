@@ -1,9 +1,15 @@
 import logging
 import requests
 import time
+import sys
+import os
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from datetime import datetime
+
+# Добавляем путь проекта
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from config import REQUEST_DELAY
 
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +21,7 @@ class YulaParser:
     
     def __init__(self):
         self.ua = UserAgent()
-        self.base_url = "https://yula.kz"  # или https://yula.ua
+        self.base_url = "https://yula.kz"
         self.session = requests.Session()
     
     def _get_headers(self):
@@ -56,7 +62,6 @@ class YulaParser:
             
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Ищем карточки объявлений
             items = soup.find_all('div', class_='product-item')
             
             logger.info(f"✅ Найдено товаров на Юла: {len(items)}")
@@ -79,7 +84,6 @@ class YulaParser:
     def _parse_item(self, item):
         """Парсить товар из элемента Юла"""
         try:
-            # Ссылка и ID
             link_elem = item.find('a', class_='product-link')
             if not link_elem:
                 return None
@@ -87,16 +91,13 @@ class YulaParser:
             url = link_elem.get('href', '')
             item_id = url.split('/')[-1] if url else None
             
-            # Название
             title_elem = item.find('h2', class_='product-title')
             title = title_elem.get_text(strip=True) if title_elem else "Unknown"
             
-            # Цена
             price_elem = item.find('span', class_='product-price')
             price_text = price_elem.get_text(strip=True) if price_elem else "0"
             price = self._parse_price(price_text)
             
-            # Локация
             location_elem = item.find('span', class_='product-location')
             location = location_elem.get_text(strip=True) if location_elem else "Unknown"
             

@@ -1,9 +1,15 @@
 import logging
 import requests
 import time
+import sys
+import os
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from datetime import datetime
+
+# Добавляем путь проекта
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from config import REQUEST_DELAY
 from models import get_session, Product
 

@@ -1,9 +1,15 @@
 import logging
 import requests
 import time
+import sys
+import os
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from datetime import datetime
+
+# Добавляем путь проекта
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from config import REQUEST_DELAY
 
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +38,6 @@ class AutoRuParser:
         products = []
         
         try:
-            # Авто.ру использует специальный URL для поиска
             search_url = f"{self.base_url}/cars/all/"
             
             params = {
@@ -58,7 +63,6 @@ class AutoRuParser:
             
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Ищем карточки объявлений
             items = soup.find_all('div', {'data-auto-test-id': 'listingLot'})
             
             logger.info(f"✅ Найдено авто на Авто.ру: {len(items)}")
@@ -81,7 +85,6 @@ class AutoRuParser:
     def _parse_item(self, item):
         """Парсить автомобиль из элемента"""
         try:
-            # Ссылка
             link_elem = item.find('a', class_='ListingItemContent__link')
             if not link_elem:
                 return None
@@ -89,16 +92,13 @@ class AutoRuParser:
             url = link_elem.get('href', '')
             item_id = url.split('/')[-1] if url else None
             
-            # Название (марка, модель, год)
             title_elem = item.find('h2', class_='ListingItemTitle__title')
             title = title_elem.get_text(strip=True) if title_elem else "Unknown"
             
-            # Цена
             price_elem = item.find('span', class_='ListingPriceInfo__price')
             price_text = price_elem.get_text(strip=True) if price_elem else "0"
             price = self._parse_price(price_text)
             
-            # Характеристики (пробег, год)
             specs = item.find_all('li', class_='ListingItemCharacteristics__item')
             specs_text = ', '.join([s.get_text(strip=True) for s in specs[:3]])
             
